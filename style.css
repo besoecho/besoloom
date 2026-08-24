@@ -8,44 +8,48 @@
 }
 
 #besoloom_settings .besoloom_quick_controls {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
-    gap: 8px;
+    display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
 }
 
 #besoloom_settings .besoloom_quick_enable {
+    flex: 0 0 auto;
     min-height: 38px;
     padding: 7px 9px;
     border: 1px solid var(--loom-border);
     border-radius: 10px;
     background: var(--loom-soft);
+    white-space: nowrap;
+}
+
+#besoloom_settings .besoloom_quick_enable span {
+    white-space: nowrap;
 }
 
 #besoloom_settings .besoloom_quick_controls .menu_button {
+    flex: 0 0 auto;
+    width: auto !important;
+    min-width: max-content;
     min-height: 38px;
+    padding-inline: 10px;
     justify-content: center;
-}
-
-#besoloom_settings .besoloom_quick_controls > :nth-child(1) {
-    justify-self: stretch;
-}
-
-#besoloom_settings .besoloom_quick_controls > :nth-child(2) {
-    justify-self: stretch;
-}
-
-#besoloom_settings .besoloom_quick_controls > :nth-child(3) {
-    justify-self: stretch;
+    white-space: nowrap !important;
+    word-break: keep-all;
 }
 
 @media (max-width: 700px) {
     #besoloom_settings .besoloom_quick_controls {
-        grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 0.85fr);
         gap: 6px;
     }
 
     #besoloom_settings .besoloom_quick_enable {
         padding-inline: 7px;
+    }
+
+    #besoloom_settings .besoloom_quick_controls .menu_button {
+        padding-inline: 8px;
     }
 }
