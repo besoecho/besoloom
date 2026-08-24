@@ -42,7 +42,7 @@ function currentContext() {
 }
 
 function hasActiveChat(context = currentContext()) {
-    return Boolean(context?.chatId || context?.groupId || context?.characterId !== undefined);
+    return Boolean(context?.chatId) || context?.groupId != null || context?.characterId != null;
 }
 
 function getChatState({ create = true } = {}) {
@@ -299,7 +299,7 @@ async function aiSplitOutline() {
         const nodes = normalizeNodes(result.nodes || []);
         if (!nodes.length) throw new Error("没有拆出有效节点");
 
-        state.rawOutline = raw;
+        state.rawOutline = nodes.map((node) => node.goal).join("\n");
         state.nodes = nodes;
         state.currentIndex = 0;
         state.correction = "";
