@@ -1,5 +1,9 @@
 {
+  "$schema": "./manifest.schema.json",
+  "schemaVersion": 1,
+  "id": "beso-loom",
   "name": "Beso Loom",
-  "version": "0.0.1",
-  "status": "write-test"
+  "version": "0.1.0",
+  "status": "bootstrap",
+  "repository": "https://github.com/besoecho/besoloom"
 }
