@@ -9,13 +9,12 @@
 
 #besoloom_settings .besoloom_quick_controls {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px;
     align-items: center;
 }
 
 #besoloom_settings .besoloom_quick_enable {
-    grid-column: 1 / -1;
     min-height: 38px;
     padding: 7px 9px;
     border: 1px solid var(--loom-border);
@@ -28,8 +27,25 @@
     justify-content: center;
 }
 
+#besoloom_settings .besoloom_quick_controls > :nth-child(1) {
+    justify-self: stretch;
+}
+
+#besoloom_settings .besoloom_quick_controls > :nth-child(2) {
+    justify-self: stretch;
+}
+
+#besoloom_settings .besoloom_quick_controls > :nth-child(3) {
+    justify-self: stretch;
+}
+
 @media (max-width: 700px) {
     #besoloom_settings .besoloom_quick_controls {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 0.85fr);
+        gap: 6px;
+    }
+
+    #besoloom_settings .besoloom_quick_enable {
+        padding-inline: 7px;
     }
 }
