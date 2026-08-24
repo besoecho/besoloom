@@ -6,44 +6,31 @@ const SETTINGS_ID = "besoloom_settings";
 const EXTENSION_FOLDER_NAME = "besoloom";
 
 let updateRunning = false;
-
-function waitForElement(selector, timeout = 12000) {
-    return new Promise((resolve, reject) => {
-        const found = document.querySelector(selector);
-        if (found) {
-            resolve(found);
-            return;
-        }
-
-        const observer = new MutationObserver(() => {
-            const node = document.querySelector(selector);
-            if (!node) return;
-            observer.disconnect();
-            clearTimeout(timer);
-            resolve(node);
-        });
-
-        observer.observe(document.documentElement, { childList: true, subtree: true });
-        const timer = setTimeout(() => {
-            observer.disconnect();
-            reject(new Error(`Timed out waiting for ${selector}`));
-        }, timeout);
-    });
-}
+let settingsObserver = null;
+let pageObserver = null;
 
 function text(selector, fallback = "") {
     return String(document.querySelector(selector)?.textContent || fallback).trim();
 }
 
 function snapshot() {
-    const position = text("#besoloom_position", "—");
-    const status = text("#besoloom_status", "等待剧情路线");
-    const statusState = document.querySelector("#besoloom_status")?.getAttribute("data-state") || "idle";
-    const currentNode = text("#besoloom_nodes .besoloom_node.is-current .besoloom_node_text", "还没有剧情节点");
-    const note = text("#besoloom_inspection_note", "暂无巡检记录。");
-    const disabled = Boolean(document.querySelector("#besoloom_inspect")?.disabled);
-    const enabled = Boolean(document.querySelector("#besoloom_enabled")?.checked);
-    return { position, status, statusState, currentNode, note, disabled, enabled };
+    const settingsReady = Boolean(document.getElementById(SETTINGS_ID));
+    const inspectButton = document.querySelector("#besoloom_inspect");
+    const enabledToggle = document.querySelector("#besoloom_enabled");
+
+    return {
+        settingsReady,
+        position: text("#besoloom_position", "—"),
+        status: text("#besoloom_status", settingsReady ? "等待剧情路线" : "正在连接剧情织机…"),
+        statusState: document.querySelector("#besoloom_status")?.getAttribute("data-state") || "idle",
+        currentNode: text(
+            "#besoloom_nodes .besoloom_node.is-current .besoloom_node_text",
+            settingsReady ? "还没有剧情节点" : "设置面板加载完成后会自动同步。",
+        ),
+        note: text("#besoloom_inspection_note", settingsReady ? "暂无巡检记录。" : "等待 Beso Loom 核心加载。"),
+        controlsDisabled: !inspectButton || Boolean(inspectButton.disabled),
+        enabled: enabledToggle ? Boolean(enabledToggle.checked) : true,
+    };
 }
 
 function updateFloatingUi(root) {
@@ -52,16 +39,28 @@ function updateFloatingUi(root) {
     root.querySelectorAll("[data-loom-position]").forEach((node) => {
         node.textContent = state.position;
     });
-    root.querySelector("[data-loom-status]").textContent = state.enabled ? state.status : "已停用";
-    root.querySelector("[data-loom-status]").dataset.state = state.enabled ? state.statusState : "disabled";
-    root.querySelector("[data-loom-node]").textContent = state.currentNode;
-    root.querySelector("[data-loom-note]").textContent = state.note;
 
-    for (const button of root.querySelectorAll("[data-loom-action]")) {
-        button.disabled = state.disabled;
+    const status = root.querySelector("[data-loom-status]");
+    if (status) {
+        status.textContent = state.settingsReady
+            ? (state.enabled ? state.status : "已停用")
+            : "正在连接剧情织机…";
+        status.dataset.state = state.settingsReady
+            ? (state.enabled ? state.statusState : "disabled")
+            : "working";
     }
 
-    root.classList.toggle("is-disabled", !state.enabled);
+    const node = root.querySelector("[data-loom-node]");
+    if (node) node.textContent = state.currentNode;
+
+    const note = root.querySelector("[data-loom-note]");
+    if (note) note.textContent = state.note;
+
+    for (const button of root.querySelectorAll("[data-loom-action]")) {
+        button.disabled = state.controlsDisabled;
+    }
+
+    root.classList.toggle("is-disabled", state.settingsReady && !state.enabled);
 }
 
 function triggerMainControl(action) {
@@ -126,8 +125,51 @@ async function updateSelf() {
     }
 }
 
-function createFloatingUi(settingsRoot) {
-    if (document.getElementById(FLOAT_ROOT_ID)) return;
+function connectSettings(root) {
+    const settingsRoot = document.getElementById(SETTINGS_ID);
+    if (!settingsRoot) return false;
+
+    if (settingsObserver) settingsObserver.disconnect();
+    settingsObserver = new MutationObserver(() => updateFloatingUi(root));
+    settingsObserver.observe(settingsRoot, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ["disabled", "checked", "data-state"],
+    });
+
+    const updateButton = settingsRoot.querySelector("#besoloom_update");
+    if (updateButton && !updateButton.dataset.loomBound) {
+        updateButton.dataset.loomBound = "true";
+        updateButton.addEventListener("click", () => {
+            void updateSelf();
+        });
+    }
+
+    updateFloatingUi(root);
+    return true;
+}
+
+function watchForSettings(root) {
+    if (connectSettings(root)) return;
+
+    if (pageObserver) pageObserver.disconnect();
+    pageObserver = new MutationObserver(() => {
+        if (!connectSettings(root)) return;
+        pageObserver.disconnect();
+        pageObserver = null;
+    });
+    pageObserver.observe(document.documentElement, { childList: true, subtree: true });
+}
+
+function createFloatingUi() {
+    const existing = document.getElementById(FLOAT_ROOT_ID);
+    if (existing) {
+        watchForSettings(existing);
+        updateFloatingUi(existing);
+        return existing;
+    }
 
     const root = document.createElement("div");
     root.id = FLOAT_ROOT_ID;
@@ -150,21 +192,22 @@ function createFloatingUi(settingsRoot) {
                 </div>
             </header>
 
-            <div class="besoloom_float_status" data-loom-status data-state="idle">等待剧情路线</div>
-            <div class="besoloom_float_node" data-loom-node>还没有剧情节点</div>
+            <div class="besoloom_float_status" data-loom-status data-state="working">正在连接剧情织机…</div>
+            <div class="besoloom_float_node" data-loom-node>设置面板加载完成后会自动同步。</div>
 
             <div class="besoloom_float_actions">
-                <button type="button" data-loom-action="prev">← 上一节点</button>
-                <button type="button" class="is-primary" data-loom-action="inspect">立即巡检</button>
-                <button type="button" data-loom-action="next">下一节点 →</button>
+                <button type="button" data-loom-action="prev" disabled>← 上一节点</button>
+                <button type="button" class="is-primary" data-loom-action="inspect" disabled>立即巡检</button>
+                <button type="button" data-loom-action="next" disabled>下一节点 →</button>
             </div>
 
             <div class="besoloom_float_note">
                 <span>最近巡检</span>
-                <p data-loom-note>暂无巡检记录。</p>
+                <p data-loom-note>等待 Beso Loom 核心加载。</p>
             </div>
         </section>
     `;
+
     document.body.appendChild(root);
 
     const pill = root.querySelector(".besoloom_float_pill");
@@ -194,28 +237,22 @@ function createFloatingUi(settingsRoot) {
         triggerMainControl(button.dataset.loomAction);
     });
 
-    settingsRoot.querySelector("#besoloom_update")?.addEventListener("click", () => {
-        void updateSelf();
-    });
-
-    const observer = new MutationObserver(() => updateFloatingUi(root));
-    observer.observe(settingsRoot, {
-        subtree: true,
-        childList: true,
-        characterData: true,
-        attributes: true,
-        attributeFilter: ["disabled", "checked", "data-state"],
-    });
-
     updateFloatingUi(root);
+    watchForSettings(root);
+    return root;
 }
 
-jQuery(async () => {
+function bootFloatingUi() {
     try {
-        const settingsRoot = await waitForElement(`#${SETTINGS_ID}`);
-        createFloatingUi(settingsRoot);
-        console.info("[Beso Loom] floating controls + self updater loaded");
+        createFloatingUi();
+        console.info("[Beso Loom] floating controls mounted");
     } catch (error) {
         console.error("[Beso Loom] floating controls failed", error);
     }
-});
+}
+
+if (document.body) {
+    bootFloatingUi();
+} else {
+    document.addEventListener("DOMContentLoaded", bootFloatingUi, { once: true });
+}
