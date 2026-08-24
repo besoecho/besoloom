@@ -1,0 +1,29 @@
+name: Validate manifest
+
+on:
+  push:
+    paths:
+      - manifest.json
+      - manifest.schema.json
+      - scripts/validate_manifest.py
+      - .github/workflows/validate-manifest.yml
+  pull_request:
+    paths:
+      - manifest.json
+      - manifest.schema.json
+      - scripts/validate_manifest.py
+      - .github/workflows/validate-manifest.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Validate Beso Loom manifest
+        run: python3 scripts/validate_manifest.py
