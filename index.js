@@ -181,6 +181,11 @@ function extractJson(text) {
 }
 
 async function quietJson(prompt, schema) {
+    const independentApi = globalThis.BesoLoomIndependentApi;
+    if (independentApi?.isEnabled?.()) {
+        return await independentApi.requestJson(prompt, schema);
+    }
+
     const context = currentContext();
     try {
         const result = await context.generateQuietPrompt?.({
@@ -488,5 +493,5 @@ jQuery(async () => {
     bindEvents();
     refreshInjection();
     renderAll();
-    console.info("[Beso Loom] v0.1.0 loaded");
+    console.info("[Beso Loom] v0.3.0 loaded");
 });
