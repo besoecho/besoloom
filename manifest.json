@@ -6,6 +6,6 @@
   "js": "boot.js",
   "css": "floating.css",
   "author": "besoecho",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "homePage": "https://github.com/besoecho/besoloom"
 }
