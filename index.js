@@ -464,9 +464,11 @@ function bindEvents() {
     const events = context.eventTypes;
     if (!context.eventSource || !events) return;
 
-    context.eventSource.on(events.MESSAGE_RECEIVED, async () => {
+    context.eventSource.on(events.MESSAGE_RECEIVED, () => {
         renderAll();
-        await maybeAutoInspect();
+        setTimeout(() => {
+            void maybeAutoInspect();
+        }, 0);
     });
 
     context.eventSource.on(events.CHAT_CHANGED, () => {
