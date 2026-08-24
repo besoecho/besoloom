@@ -7,11 +7,21 @@ This repository starts with a deliberately stack-neutral foundation so the runti
 ## Repository contract
 
 - `manifest.json` — machine-readable project metadata.
-- `manifest.schema.json` — JSON Schema for validating the manifest.
-- `.gitignore` — editor and operating-system noise only until the runtime stack is chosen.
+- `manifest.schema.json` — JSON Schema describing the manifest contract.
+- `scripts/validate_manifest.py` — dependency-free manifest validation used locally and in CI.
+- `.github/workflows/validate-manifest.yml` — automatic manifest validation on relevant pushes and pull requests.
+- `.gitignore` — editor, operating-system, local-secret, and log noise only until the runtime stack is chosen.
+
+## Validate locally
+
+```bash
+python3 scripts/validate_manifest.py
+```
+
+A valid bootstrap manifest prints a short `manifest OK` message and exits with status 0. Invalid JSON, missing or unexpected fields, bad version/status values, or a broken schema reference fail with a non-zero exit status.
 
 ## Status
 
 Current phase: `bootstrap`
 
-The next implementation step is to add the agreed Beso Loom runtime structure and then move the manifest status to `development`.
+The repository foundation and metadata checks are now in place. The next implementation step is the agreed Beso Loom runtime/interface layer; the runtime language and framework remain intentionally undecided until that contract is defined.
