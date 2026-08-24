@@ -4,10 +4,9 @@ import "./index.js";
 const FLOAT_ROOT_ID = "besoloom_float_root";
 const SETTINGS_ID = "besoloom_settings";
 const EXTENSION_FOLDER_NAME = "besoloom";
+const EXTENSION_EXTERNAL_ID = `third-party/${EXTENSION_FOLDER_NAME}`;
 
 let updateRunning = false;
-let settingsObserver = null;
-let pageObserver = null;
 
 function text(selector, fallback = "") {
     return String(document.querySelector(selector)?.textContent || fallback).trim();
@@ -64,17 +63,54 @@ function updateFloatingUi(root) {
 }
 
 function triggerMainControl(action) {
-    const map = {
+    const target = document.querySelector({
         prev: "#besoloom_prev",
         inspect: "#besoloom_inspect",
         next: "#besoloom_next",
-    };
-    const target = document.querySelector(map[action]);
+    }[action]);
+
     if (!target || target.disabled) {
         globalThis.toastr?.warning?.("先打开聊天并保存剧情路线。", "Beso Loom");
         return;
     }
     target.click();
+}
+
+async function detectInstallScopes(headers) {
+    try {
+        const response = await fetch("/api/extensions/discover", { headers });
+        if (response.ok) {
+            const entries = await response.json();
+            const found = Array.isArray(entries)
+                ? entries.find((entry) => entry?.name === EXTENSION_EXTERNAL_ID)
+                : null;
+            if (found?.type === "global") return [true, false];
+            if (found?.type === "local") return [false, true];
+        }
+    } catch (error) {
+        console.warn("[Beso Loom] could not detect extension scope", error);
+    }
+    return [false, true];
+}
+
+async function requestUpdate(headers, isGlobal) {
+    const response = await fetch("/api/extensions/update", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+            extensionName: EXTENSION_FOLDER_NAME,
+            global: isGlobal,
+        }),
+    });
+
+    const body = await response.text();
+    if (!response.ok) {
+        const error = new Error(body || `HTTP ${response.status}`);
+        error.status = response.status;
+        throw error;
+    }
+
+    return body ? JSON.parse(body) : {};
 }
 
 async function updateSelf() {
@@ -92,21 +128,22 @@ async function updateSelf() {
     try {
         const context = getContext();
         const headers = context?.getRequestHeaders?.() || { "Content-Type": "application/json" };
-        const response = await fetch("/api/extensions/update", {
-            method: "POST",
-            headers,
-            body: JSON.stringify({
-                extensionName: EXTENSION_FOLDER_NAME,
-                global: false,
-            }),
-        });
+        const scopes = await detectInstallScopes(headers);
+        let result = null;
+        let lastError = null;
 
-        if (!response.ok) {
-            const detail = await response.text();
-            throw new Error(detail || `HTTP ${response.status}`);
+        for (const isGlobal of scopes) {
+            try {
+                result = await requestUpdate(headers, isGlobal);
+                break;
+            } catch (error) {
+                lastError = error;
+                if (error?.status !== 404) throw error;
+            }
         }
 
-        const result = await response.json();
+        if (!result) throw lastError || new Error("没有找到 Beso Loom 的安装目录");
+
         if (result?.isUpToDate) {
             globalThis.toastr?.success?.("已经是最新版本。", "Beso Loom");
         } else {
@@ -125,51 +162,15 @@ async function updateSelf() {
     }
 }
 
-function connectSettings(root) {
-    const settingsRoot = document.getElementById(SETTINGS_ID);
-    if (!settingsRoot) return false;
-
-    if (settingsObserver) settingsObserver.disconnect();
-    settingsObserver = new MutationObserver(() => updateFloatingUi(root));
-    settingsObserver.observe(settingsRoot, {
-        subtree: true,
-        childList: true,
-        characterData: true,
-        attributes: true,
-        attributeFilter: ["disabled", "checked", "data-state"],
-    });
-
-    const updateButton = settingsRoot.querySelector("#besoloom_update");
-    if (updateButton && !updateButton.dataset.loomBound) {
-        updateButton.dataset.loomBound = "true";
-        updateButton.addEventListener("click", () => {
-            void updateSelf();
-        });
-    }
-
-    updateFloatingUi(root);
-    return true;
-}
-
-function watchForSettings(root) {
-    if (connectSettings(root)) return;
-
-    if (pageObserver) pageObserver.disconnect();
-    pageObserver = new MutationObserver(() => {
-        if (!connectSettings(root)) return;
-        pageObserver.disconnect();
-        pageObserver = null;
-    });
-    pageObserver.observe(document.documentElement, { childList: true, subtree: true });
+function bindSettingsUpdateButton() {
+    const button = document.querySelector("#besoloom_update");
+    if (!button || button.dataset.loomBound === "true") return;
+    button.dataset.loomBound = "true";
+    button.addEventListener("click", () => void updateSelf());
 }
 
 function createFloatingUi() {
-    const existing = document.getElementById(FLOAT_ROOT_ID);
-    if (existing) {
-        watchForSettings(existing);
-        updateFloatingUi(existing);
-        return existing;
-    }
+    if (document.getElementById(FLOAT_ROOT_ID)) return;
 
     const root = document.createElement("div");
     root.id = FLOAT_ROOT_ID;
@@ -226,33 +227,27 @@ function createFloatingUi() {
     root.addEventListener("click", (event) => {
         if (!(event.target instanceof Element)) return;
 
-        const updater = event.target.closest("[data-loom-update]");
-        if (updater) {
+        if (event.target.closest("[data-loom-update]")) {
             void updateSelf();
             return;
         }
 
         const button = event.target.closest("[data-loom-action]");
-        if (!button) return;
-        triggerMainControl(button.dataset.loomAction);
+        if (button) triggerMainControl(button.dataset.loomAction);
     });
 
-    updateFloatingUi(root);
-    watchForSettings(root);
-    return root;
-}
+    const sync = () => {
+        bindSettingsUpdateButton();
+        updateFloatingUi(root);
+    };
 
-function bootFloatingUi() {
-    try {
-        createFloatingUi();
-        console.info("[Beso Loom] floating controls mounted");
-    } catch (error) {
-        console.error("[Beso Loom] floating controls failed", error);
-    }
+    sync();
+    window.setInterval(sync, 800);
+    console.info("[Beso Loom] floating controls mounted");
 }
 
 if (document.body) {
-    bootFloatingUi();
+    createFloatingUi();
 } else {
-    document.addEventListener("DOMContentLoaded", bootFloatingUi, { once: true });
+    document.addEventListener("DOMContentLoaded", createFloatingUi, { once: true });
 }
