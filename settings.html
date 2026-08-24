@@ -1,0 +1,72 @@
+<div id="besoloom_settings" class="extension_container">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>Beso Loom｜剧情织机</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <p class="besoloom_hint">你定主线经线，正文模型自由织细节纬线。完整未来路线只给幕后监督。</p>
+
+            <div class="besoloom_row besoloom_switches">
+                <label class="checkbox_label">
+                    <input id="besoloom_enabled" type="checkbox" />
+                    <span>启用剧情织机</span>
+                </label>
+                <label class="checkbox_label">
+                    <input id="besoloom_auto_inspect" type="checkbox" />
+                    <span>自动巡检</span>
+                </label>
+            </div>
+
+            <div class="besoloom_grid">
+                <label>
+                    <span>每几轮巡检</span>
+                    <input id="besoloom_interval" class="text_pole" type="number" min="1" max="50" step="1" />
+                </label>
+                <label>
+                    <span>监督尺度</span>
+                    <select id="besoloom_strictness" class="text_pole">
+                        <option value="loose">宽松</option>
+                        <option value="balanced">平衡</option>
+                        <option value="strict">严格</option>
+                    </select>
+                </label>
+            </div>
+
+            <hr />
+
+            <div id="besoloom_chat_controls">
+                <label for="besoloom_outline"><b>完整剧情脉络</b></label>
+                <p class="besoloom_hint">手动模式：一行一个大节点。也可以直接粘一整段大纲，再点“AI 粗拆节点”。</p>
+                <textarea id="besoloom_outline" class="text_pole textarea_compact" rows="8" placeholder="例：\n幼儿园相识\n小学慢慢熟起来\n高中辛聆去巴黎\n回国后发生绑架\n大学重逢"></textarea>
+
+                <div class="besoloom_actions">
+                    <button id="besoloom_save_route" class="menu_button">保存线路</button>
+                    <button id="besoloom_ai_split" class="menu_button">AI 粗拆节点</button>
+                </div>
+
+                <label for="besoloom_hard_limits"><b>硬限制（可不填）</b></label>
+                <textarea id="besoloom_hard_limits" class="text_pole textarea_compact" rows="3" placeholder="只写你实际遇到、确实需要锁死的规则。"></textarea>
+
+                <div class="besoloom_current_card">
+                    <div class="besoloom_current_head">
+                        <span>当前节点 <b id="besoloom_position">—</b></span>
+                        <span id="besoloom_status" class="besoloom_status" data-state="idle">等待剧情路线</span>
+                    </div>
+                    <div id="besoloom_nodes" class="besoloom_nodes"></div>
+                </div>
+
+                <div class="besoloom_actions besoloom_nav">
+                    <button id="besoloom_prev" class="menu_button">← 上一节点</button>
+                    <button id="besoloom_inspect" class="menu_button">立即巡检</button>
+                    <button id="besoloom_next" class="menu_button">下一节点 →</button>
+                </div>
+
+                <div class="besoloom_note">
+                    <b>最近巡检</b>
+                    <div id="besoloom_inspection_note">暂无巡检记录。</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
