@@ -1,0 +1,202 @@
+@import url("./style.css");
+
+#besoloom_float_root {
+    --loom-float-accent: rgba(181, 135, 154, 0.96);
+    --loom-float-bg: rgba(31, 29, 33, 0.94);
+    --loom-float-border: rgba(214, 177, 192, 0.34);
+    --loom-float-soft: rgba(214, 177, 192, 0.12);
+    position: fixed;
+    right: 14px;
+    bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+    z-index: 31000;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+#besoloom_float_root .besoloom_float_pill {
+    margin-left: auto;
+    min-height: 42px;
+    padding: 7px 12px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid var(--loom-float-border);
+    border-radius: 999px;
+    background: var(--loom-float-bg);
+    color: var(--SmartThemeBodyColor, #eee);
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.28);
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+#besoloom_float_root .besoloom_float_mark {
+    font-size: 17px;
+    line-height: 1;
+}
+
+#besoloom_float_root .besoloom_float_name {
+    font-weight: 700;
+}
+
+#besoloom_float_root .besoloom_float_pos {
+    min-width: 28px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--loom-float-soft);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+#besoloom_float_root .besoloom_float_panel {
+    width: min(350px, calc(100vw - 24px));
+    max-height: min(520px, 62vh);
+    margin-bottom: 9px;
+    overflow: auto;
+    border: 1px solid var(--loom-float-border);
+    border-radius: 15px;
+    background: var(--loom-float-bg);
+    color: var(--SmartThemeBodyColor, #eee);
+    box-shadow: 0 14px 38px rgba(0, 0, 0, 0.34);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+#besoloom_float_root.is-open {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-end;
+}
+
+#besoloom_float_root .besoloom_float_header {
+    padding: 12px 12px 8px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+#besoloom_float_root .besoloom_float_header strong {
+    display: block;
+    font-size: 1.05em;
+}
+
+#besoloom_float_root .besoloom_float_subtitle {
+    display: block;
+    margin-top: 2px;
+    opacity: 0.68;
+    font-size: 0.86em;
+}
+
+#besoloom_float_root .besoloom_float_close {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    font-size: 24px;
+    line-height: 28px;
+    opacity: 0.7;
+    cursor: pointer;
+}
+
+#besoloom_float_root .besoloom_float_status {
+    display: inline-flex;
+    margin: 0 12px 9px;
+    padding: 3px 9px;
+    border: 1px solid var(--loom-float-border);
+    border-radius: 999px;
+    font-size: 0.82em;
+}
+
+#besoloom_float_root .besoloom_float_status[data-state="working"] {
+    animation: besoloom-float-pulse 1.1s ease-in-out infinite;
+}
+
+#besoloom_float_root .besoloom_float_status[data-state="drift"] {
+    font-weight: 700;
+}
+
+#besoloom_float_root.is-disabled .besoloom_float_pill,
+#besoloom_float_root .besoloom_float_status[data-state="disabled"] {
+    opacity: 0.58;
+}
+
+#besoloom_float_root .besoloom_float_node {
+    margin: 0 12px 12px;
+    padding: 11px 12px;
+    border: 1px solid var(--loom-float-border);
+    border-radius: 11px;
+    background: var(--loom-float-soft);
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+#besoloom_float_root .besoloom_float_actions {
+    display: grid;
+    grid-template-columns: 1fr 1.12fr 1fr;
+    gap: 7px;
+    padding: 0 12px 12px;
+}
+
+#besoloom_float_root .besoloom_float_actions button {
+    min-height: 36px;
+    padding: 6px 8px;
+    border: 1px solid var(--loom-float-border);
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.05);
+    color: inherit;
+    cursor: pointer;
+}
+
+#besoloom_float_root .besoloom_float_actions button.is-primary {
+    background: var(--loom-float-accent);
+    color: #fff;
+    font-weight: 700;
+}
+
+#besoloom_float_root .besoloom_float_actions button:disabled {
+    opacity: 0.42;
+    cursor: default;
+}
+
+#besoloom_float_root .besoloom_float_note {
+    padding: 10px 12px 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#besoloom_float_root .besoloom_float_note > span {
+    opacity: 0.65;
+    font-size: 0.82em;
+}
+
+#besoloom_float_root .besoloom_float_note p {
+    margin: 4px 0 0;
+    max-height: 92px;
+    overflow: auto;
+    white-space: pre-wrap;
+    line-height: 1.45;
+}
+
+@keyframes besoloom-float-pulse {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+}
+
+@media (max-width: 700px) {
+    #besoloom_float_root {
+        right: 8px;
+        bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    }
+
+    #besoloom_float_root .besoloom_float_panel {
+        width: min(340px, calc(100vw - 16px));
+        max-height: 58vh;
+    }
+
+    #besoloom_float_root .besoloom_float_actions {
+        grid-template-columns: 1fr;
+    }
+}
