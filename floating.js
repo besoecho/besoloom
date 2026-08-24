@@ -1,7 +1,11 @@
+import { getContext } from "../../../extensions.js";
 import "./index.js";
 
 const FLOAT_ROOT_ID = "besoloom_float_root";
 const SETTINGS_ID = "besoloom_settings";
+const EXTENSION_FOLDER_NAME = "besoloom";
+
+let updateRunning = false;
 
 function waitForElement(selector, timeout = 12000) {
     return new Promise((resolve, reject) => {
@@ -74,6 +78,54 @@ function triggerMainControl(action) {
     target.click();
 }
 
+async function updateSelf() {
+    if (updateRunning) return;
+    updateRunning = true;
+
+    const buttons = Array.from(document.querySelectorAll("#besoloom_update, [data-loom-update]"));
+    const labels = new Map();
+    for (const button of buttons) {
+        labels.set(button, button.textContent);
+        button.disabled = true;
+        if (button.id === "besoloom_update") button.textContent = "正在检查更新…";
+    }
+
+    try {
+        const context = getContext();
+        const headers = context?.getRequestHeaders?.() || { "Content-Type": "application/json" };
+        const response = await fetch("/api/extensions/update", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+                extensionName: EXTENSION_FOLDER_NAME,
+                global: false,
+            }),
+        });
+
+        if (!response.ok) {
+            const detail = await response.text();
+            throw new Error(detail || `HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+        if (result?.isUpToDate) {
+            globalThis.toastr?.success?.("已经是最新版本。", "Beso Loom");
+        } else {
+            const hash = result?.shortCommitHash ? `（${result.shortCommitHash}）` : "";
+            globalThis.toastr?.success?.(`更新成功${hash}，刷新页面后生效。`, "Beso Loom");
+        }
+    } catch (error) {
+        console.error("[Beso Loom] self update failed", error);
+        globalThis.toastr?.error?.(String(error?.message || error), "Beso Loom 更新失败");
+    } finally {
+        updateRunning = false;
+        for (const button of buttons) {
+            button.disabled = false;
+            if (labels.has(button)) button.textContent = labels.get(button);
+        }
+    }
+}
+
 function createFloatingUi(settingsRoot) {
     if (document.getElementById(FLOAT_ROOT_ID)) return;
 
@@ -92,7 +144,10 @@ function createFloatingUi(settingsRoot) {
                     <strong>Beso Loom</strong>
                     <span class="besoloom_float_subtitle">当前节点 <b data-loom-position>—</b></span>
                 </div>
-                <button class="besoloom_float_close" type="button" aria-label="收起 Beso Loom">×</button>
+                <div>
+                    <button class="besoloom_float_close" type="button" data-loom-update title="检查并更新 Beso Loom" aria-label="检查并更新 Beso Loom">↻</button>
+                    <button class="besoloom_float_close" type="button" data-loom-close aria-label="收起 Beso Loom">×</button>
+                </div>
             </header>
 
             <div class="besoloom_float_status" data-loom-status data-state="idle">等待剧情路线</div>
@@ -114,7 +169,7 @@ function createFloatingUi(settingsRoot) {
 
     const pill = root.querySelector(".besoloom_float_pill");
     const panel = root.querySelector(".besoloom_float_panel");
-    const close = root.querySelector(".besoloom_float_close");
+    const close = root.querySelector("[data-loom-close]");
 
     const setOpen = (open) => {
         panel.hidden = !open;
@@ -126,9 +181,21 @@ function createFloatingUi(settingsRoot) {
     close.addEventListener("click", () => setOpen(false));
 
     root.addEventListener("click", (event) => {
+        if (!(event.target instanceof Element)) return;
+
+        const updater = event.target.closest("[data-loom-update]");
+        if (updater) {
+            void updateSelf();
+            return;
+        }
+
         const button = event.target.closest("[data-loom-action]");
         if (!button) return;
         triggerMainControl(button.dataset.loomAction);
+    });
+
+    settingsRoot.querySelector("#besoloom_update")?.addEventListener("click", () => {
+        void updateSelf();
     });
 
     const observer = new MutationObserver(() => updateFloatingUi(root));
@@ -147,7 +214,7 @@ jQuery(async () => {
     try {
         const settingsRoot = await waitForElement(`#${SETTINGS_ID}`);
         createFloatingUi(settingsRoot);
-        console.info("[Beso Loom] floating controls loaded");
+        console.info("[Beso Loom] floating controls + self updater loaded");
     } catch (error) {
         console.error("[Beso Loom] floating controls failed", error);
     }
