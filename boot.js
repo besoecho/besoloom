@@ -1,3 +1,4 @@
+import "./independent-api.js";
 import "./index.js";
 import "./floating.js";
 import "./mount-watchdog.js";
