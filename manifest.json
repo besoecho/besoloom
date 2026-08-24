@@ -3,9 +3,9 @@
   "loading_order": 50,
   "requires": [],
   "optional": [],
-  "js": "floating.js",
+  "js": "boot.js",
   "css": "floating.css",
   "author": "besoecho",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "homePage": "https://github.com/besoecho/besoloom"
 }
